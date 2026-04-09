@@ -1,0 +1,6 @@
+if SHIELD_DAS_KBD3_ULTM
+
+config ZMK_KEYBOARD_NAME
+    default "das-kbd3-ultm"
+
+endif # SHIELD_DAS_KBD3_ULTM
