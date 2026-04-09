@@ -11,7 +11,7 @@
 / {
     chosen {
         zmk,physical-layout   = &default_layout;
-        zephyr,display        = &ssd1306;        /* OLED on I²C — requires CONFIG_ZMK_DISPLAY=y    */
+        /* zephyr,display   = &ssd1306; */       /* OLED disabled — 4.7 kΩ pull-ups needed on SDA/SCL */
         zmk,led-indicators    = &leds;           /* lock LEDs  — requires CONFIG_ZMK_HID_INDICATORS=y */
     };
 
@@ -236,8 +236,23 @@
 //                            <NRF_PSEL(TWIM_SCL, 0, 20)>; low-power-enable; }; };
 //   };
 //
-// Bus devices:  mcp23017@20, mcp23017@21, ssd1306@3c (128×32), max17048@36
-// 4.7 kΩ pull-ups on SDA/SCL to 3.3 V required on the PCB.
+// Bus devices:  mcp23017@20, mcp23017@21, ssd1306@3c (128×32, disabled), max17048@36
+// 4.7 kΩ pull-ups on SDA/SCL to 3.3 V required on the PCB (also re-enables OLED).
+//
+// MCP23017 interrupt wiring — SHARED single open-drain INT line:
+//
+//   Both chips set IOCON.MIRROR=1 (INTA=INTB) and IOCON.ODR=1 (open-drain output).
+//   The INTB pins of both chips are wired together (open-drain wire-AND).
+//   A 4.7 kΩ pull-up from the shared wire to 3.3 V is required on the PCB.
+//   The combined wire connects to D5 / P0.24 (gpio0 pin 24) on the nRF52840.
+//
+//   mcp23017@20  INTB ──┐
+//                       ├── 4.7 kΩ → 3.3 V  →  D5 / P0.24  (gpio0 pin 24)
+//   mcp23017@21  INTB ──┘
+//
+//   MCP0 pins are all outputs (cols/LEDs) — INT will not assert in normal use.
+//   MCP1 GPB pins are pull-down row inputs — INT asserts low on each keypress.
+//   Both nodes share <&gpio0 24>; the Zephyr driver services both on one handler.
 // -------------------------------------------------------------------------
 &i2c0 {
     status = "okay";
@@ -252,6 +267,7 @@
         gpio-controller;
         #gpio-cells = <2>;
         ngpios = <16>;
+        int-gpios = <&gpio0 24 GPIO_ACTIVE_LOW>;  /* INTB → D5/P0.24; wire INTA+INTB w/ IOCON.MIRROR=1 */
         /* A2=0 A1=0 A0=0 → 0x20 */
     };
 
@@ -261,11 +277,13 @@
         gpio-controller;
         #gpio-cells = <2>;
         ngpios = <16>;
+        int-gpios = <&gpio0 24 GPIO_ACTIVE_LOW>;  /* INTB → D5/P0.24 shared w/ MCP0 — open-drain wire-AND */
         /* A2=0 A1=0 A0=1 → 0x21 */
     };
 
     ssd1306: ssd1306@3c {
         compatible = "solomon,ssd1306fb";
+        status = "disabled";     /* re-enable once PCB has 4.7 kΩ pull-ups on SDA/SCL */
         reg = <0x3c>;
         width = <128>;
         height = <32>;
