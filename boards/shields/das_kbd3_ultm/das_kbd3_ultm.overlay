@@ -13,18 +13,48 @@
         zmk,physical-layout   = &default_layout;
         zephyr,display        = &ssd1306;        /* OLED enabled — fit 4.7 kΩ pull-ups on SDA+SCL to 3.3 V */
         zmk,led-indicators    = &leds;           /* lock LEDs  — requires CONFIG_ZMK_HID_INDICATORS=y */
+        zmk,battery           = &max17048;       /* fuel gauge — interrupt-driven via ALRT→P0.08 */
     };
 
     // -------------------------------------------------------------------------
     // Key scan — all GPIOs via MCP23017 over I²C
     //
-    // MCP23017 (0x20) — &mcp23017_20:
-    //   GPA0–GPA7  (pin index 0–7)  → C0–C7
-    //   GPB0–GPB1  (pin index 8–9)  → C16–C17
+    // Optimized IDC pin assignment — each MCP chip's GPIO pins map to IDC
+    // pins in ascending numerical order, minimising ribbon-cable crossings:
     //
-    // MCP23017 (0x21) — &mcp23017_21:
-    //   GPA0–GPA7  (pin index 0–7)  → C8–C15
-    //   GPB0–GPB7  (pin index 8–15) → R0–R7
+    // MCP23017 (0x20) — &mcp23017_20  (IDC pins 1–10, cols only):
+    //   GPA0 (idx  0) → IDC  1  C4
+    //   GPA1 (idx  1) → IDC  2  C7
+    //   GPA2 (idx  2) → IDC  3  C5
+    //   GPA3 (idx  3) → IDC  4  C9
+    //   GPA4 (idx  4) → IDC  5  C8
+    //   GPA5 (idx  5) → IDC  6  C2
+    //   GPA6 (idx  6) → IDC  7  C1
+    //   GPA7 (idx  7) → IDC  8  C0
+    //   GPB0 (idx  8) → IDC  9  C3
+    //   GPB1 (idx  9) → IDC 10  C6
+    //   GPB2 (idx 10) → NumLk LED
+    //   GPB3 (idx 11) → CapsLk LED
+    //   GPB4 (idx 12) → ScrlLk LED
+    //   GPB5–GPB7 n/c
+    //
+    // MCP23017 (0x21) — &mcp23017_21  (IDC pins 11–26, cols + rows):
+    //   GPB0 (idx  8) → IDC 11  R0  (pull-down input)
+    //   GPB1 (idx  9) → IDC 12  R1  (pull-down input)
+    //   GPA0 (idx  0) → IDC 13  C14
+    //   GPA1 (idx  1) → IDC 14  C10
+    //   GPA2 (idx  2) → IDC 15  C11
+    //   GPB2 (idx 10) → IDC 16  R2  (pull-down input)
+    //   GPB3 (idx 11) → IDC 17  R3  (pull-down input)
+    //   GPB4 (idx 12) → IDC 18  R4  (pull-down input)
+    //   GPB5 (idx 13) → IDC 19  R5  (pull-down input)
+    //   GPA3 (idx  3) → IDC 20  C16
+    //   GPB6 (idx 14) → IDC 21  R6  (pull-down input)
+    //   GPB7 (idx 15) → IDC 22  R7  (pull-down input)
+    //   GPA4 (idx  4) → IDC 23  C17
+    //   GPA5 (idx  5) → IDC 24  C13
+    //   GPA6 (idx  6) → IDC 25  C12
+    //   GPA7 (idx  7) → IDC 26  C15
     //
     // ZMK mcp230xx driver: pin index 0–7 = GPA0–GPA7, 8–15 = GPB0–GPB7
     // -------------------------------------------------------------------------
@@ -34,35 +64,35 @@
         wakeup-source;
 
         col-gpios
-            = <&mcp23017_20 0 GPIO_ACTIVE_HIGH>   /* C0  - IDC pin  8 */
-            , <&mcp23017_20 1 GPIO_ACTIVE_HIGH>   /* C1  - IDC pin  7 */
-            , <&mcp23017_20 2 GPIO_ACTIVE_HIGH>   /* C2  - IDC pin  6 */
-            , <&mcp23017_20 3 GPIO_ACTIVE_HIGH>   /* C3  - IDC pin  9 */
-            , <&mcp23017_20 4 GPIO_ACTIVE_HIGH>   /* C4  - IDC pin  1 */
-            , <&mcp23017_20 5 GPIO_ACTIVE_HIGH>   /* C5  - IDC pin  3 */
-            , <&mcp23017_20 6 GPIO_ACTIVE_HIGH>   /* C6  - IDC pin 10 */
-            , <&mcp23017_20 7 GPIO_ACTIVE_HIGH>   /* C7  - IDC pin  2 */
-            , <&mcp23017_21 0 GPIO_ACTIVE_HIGH>   /* C8  - IDC pin  5 */
-            , <&mcp23017_21 1 GPIO_ACTIVE_HIGH>   /* C9  - IDC pin  4 */
-            , <&mcp23017_21 2 GPIO_ACTIVE_HIGH>   /* C10 - IDC pin 14 */
-            , <&mcp23017_21 3 GPIO_ACTIVE_HIGH>   /* C11 - IDC pin 15 */
-            , <&mcp23017_21 4 GPIO_ACTIVE_HIGH>   /* C12 - IDC pin 25 */
-            , <&mcp23017_21 5 GPIO_ACTIVE_HIGH>   /* C13 - IDC pin 24 */
-            , <&mcp23017_21 6 GPIO_ACTIVE_HIGH>   /* C14 - IDC pin 13 */
-            , <&mcp23017_21 7 GPIO_ACTIVE_HIGH>   /* C15 - IDC pin 26 */
-            , <&mcp23017_20 8 GPIO_ACTIVE_HIGH>   /* C16 - IDC pin 20 */
-            , <&mcp23017_20 9 GPIO_ACTIVE_HIGH>   /* C17 - IDC pin 23 */
+            = <&mcp23017_20 7 GPIO_ACTIVE_HIGH>   /* C0  - IDC pin  8  MCP0.GPA7 */
+            , <&mcp23017_20 6 GPIO_ACTIVE_HIGH>   /* C1  - IDC pin  7  MCP0.GPA6 */
+            , <&mcp23017_20 5 GPIO_ACTIVE_HIGH>   /* C2  - IDC pin  6  MCP0.GPA5 */
+            , <&mcp23017_20 8 GPIO_ACTIVE_HIGH>   /* C3  - IDC pin  9  MCP0.GPB0 */
+            , <&mcp23017_20 0 GPIO_ACTIVE_HIGH>   /* C4  - IDC pin  1  MCP0.GPA0 */
+            , <&mcp23017_20 2 GPIO_ACTIVE_HIGH>   /* C5  - IDC pin  3  MCP0.GPA2 */
+            , <&mcp23017_20 9 GPIO_ACTIVE_HIGH>   /* C6  - IDC pin 10  MCP0.GPB1 */
+            , <&mcp23017_20 1 GPIO_ACTIVE_HIGH>   /* C7  - IDC pin  2  MCP0.GPA1 */
+            , <&mcp23017_20 4 GPIO_ACTIVE_HIGH>   /* C8  - IDC pin  5  MCP0.GPA4 */
+            , <&mcp23017_20 3 GPIO_ACTIVE_HIGH>   /* C9  - IDC pin  4  MCP0.GPA3 */
+            , <&mcp23017_21 1 GPIO_ACTIVE_HIGH>   /* C10 - IDC pin 14  MCP1.GPA1 */
+            , <&mcp23017_21 2 GPIO_ACTIVE_HIGH>   /* C11 - IDC pin 15  MCP1.GPA2 */
+            , <&mcp23017_21 6 GPIO_ACTIVE_HIGH>   /* C12 - IDC pin 25  MCP1.GPA6 */
+            , <&mcp23017_21 5 GPIO_ACTIVE_HIGH>   /* C13 - IDC pin 24  MCP1.GPA5 */
+            , <&mcp23017_21 0 GPIO_ACTIVE_HIGH>   /* C14 - IDC pin 13  MCP1.GPA0 */
+            , <&mcp23017_21 7 GPIO_ACTIVE_HIGH>   /* C15 - IDC pin 26  MCP1.GPA7 */
+            , <&mcp23017_21 3 GPIO_ACTIVE_HIGH>   /* C16 - IDC pin 20  MCP1.GPA3 */
+            , <&mcp23017_21 4 GPIO_ACTIVE_HIGH>   /* C17 - IDC pin 23  MCP1.GPA4 */
             ;
 
         row-gpios
-            = <&mcp23017_21  8 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R0 - IDC pin 11 */
-            , <&mcp23017_21  9 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R1 - IDC pin 12 */
-            , <&mcp23017_21 10 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R2 - IDC pin 16 */
-            , <&mcp23017_21 11 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R3 - IDC pin 17 */
-            , <&mcp23017_21 12 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R4 - IDC pin 18 */
-            , <&mcp23017_21 13 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R5 - IDC pin 19 */
-            , <&mcp23017_21 14 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R6 - IDC pin 21 */
-            , <&mcp23017_21 15 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R7 - IDC pin 22 */
+            = <&mcp23017_21  8 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R0 - IDC pin 11  MCP1.GPB0 */
+            , <&mcp23017_21  9 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R1 - IDC pin 12  MCP1.GPB1 */
+            , <&mcp23017_21 10 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R2 - IDC pin 16  MCP1.GPB2 */
+            , <&mcp23017_21 11 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R3 - IDC pin 17  MCP1.GPB3 */
+            , <&mcp23017_21 12 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R4 - IDC pin 18  MCP1.GPB4 */
+            , <&mcp23017_21 13 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R5 - IDC pin 19  MCP1.GPB5 */
+            , <&mcp23017_21 14 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R6 - IDC pin 21  MCP1.GPB6 */
+            , <&mcp23017_21 15 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R7 - IDC pin 22  MCP1.GPB7 */
             ;
     };
 
@@ -166,8 +196,8 @@
     // -------------------------------------------------------------------------
     // HID lock-state indicator LEDs
     //
-    // Mapped to free pins on MCP23017 (0x20) port B:
-    //   GPB2 (pin index 10) → Num Lock
+    // Mapped to MCP23017 (0x20) port B:
+    //   GPB2 (pin index 10) → Num Lock    (IDC col range ends at GPB1=idx9; GPB2 is next free)
     //   GPB3 (pin index 11) → Caps Lock
     //   GPB4 (pin index 12) → Scroll Lock
     //
@@ -236,7 +266,7 @@
 //                            <NRF_PSEL(TWIM_SCL, 0, 20)>; low-power-enable; }; };
 //   };
 //
-// Bus devices:  mcp23017@20, mcp23017@21, ssd1306@3c (128×32, disabled), max17048@36
+// Bus devices:  mcp23017@20, mcp23017@21, ssd1306@3c (128×32), max17048@36
 // 4.7 kΩ pull-ups on SDA/SCL to 3.3 V required on the PCB (also re-enables OLED).
 //
 // MCP23017 interrupt wiring — one dedicated INT line per chip:
@@ -249,9 +279,19 @@
 //   mcp23017@20  INTB ──── D5  / P0.24  (gpio0 pin 24)  — 4.7kΩ ext. pull-up to 3.3V on PCB
 //   mcp23017@21  INTB ──── D6  / P1.00  (gpio1 pin  0)  — 4.7kΩ ext. pull-up to 3.3V on PCB
 //
-//   MCP0 pins are all outputs (cols/LEDs) — INT will not assert in normal use.
+//   MCP0 GPA=cols, GPB0-1=cols, GPB2-4=LED outputs — INT will only assert if
+//   GPB2-4 are configured as inputs (they are not).  MCP0 INT line is kept for
+//   symmetry and potential future expansion.
 //   MCP1 GPB pins are pull-down row inputs — INT asserts low on each keypress,
 //   waking the nRF and triggering interrupt-driven kscan via GPIO_MCP230XX_INTERRUPT.
+//
+// MAX17048 ALRT interrupt wiring:
+//   ALRT pin is open-drain, active-low.
+//   The Adafruit MAX17048 STEMMA QT breakout already has a 10 kΩ pull-up to VIN onboard —
+//   no external pull-up resistor is needed on the perfboard.
+//   Connect ALRT → D0 / P0.08  (gpio0 pin 8).
+//   GPIO_PULL_UP is kept as belt-and-suspenders; nRF internal ~13 kΩ || 10 kΩ = ~5.6 kΩ, fine.
+//   alert-low-percent-threshold: 4  → ALRT fires below 4% SoC (register CONFIG[7:0]).
 // -------------------------------------------------------------------------
 &i2c0 {
     status = "okay";
@@ -296,7 +336,15 @@
     };
 
     max17048: max17048@36 {
-        compatible = "maxim,max17048";
+        compatible = "zmk,maxim-max17048";
         reg = <0x36>;
+        /* ALRT open-drain → D0/P0.08.
+         * Adafruit STEMMA QT board has 10 kΩ pull-up to VIN onboard — no external resistor needed.
+         * GPIO_PULL_UP kept as belt-and-suspenders (nRF ~13 kΩ || board 10 kΩ = ~5.6 kΩ).
+         * alert-low-percent-threshold configures the CONFIG register ATHD field.
+         * The driver sets ATHD so ALRT fires below the threshold, then clears
+         * STATUS.EnVR on re-read so the open-drain line deasserts.            */
+        alert-gpios = <&gpio0 8 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        alert-low-percent-threshold = <4>;
     };
 };
