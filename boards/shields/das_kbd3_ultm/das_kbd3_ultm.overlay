@@ -344,7 +344,7 @@
          * alert-low-percent-threshold configures the CONFIG register ATHD field.
          * The driver sets ATHD so ALRT fires below the threshold, then clears
          * STATUS.EnVR on re-read so the open-drain line deasserts.            */
-        alert-gpios = <&gpio0 8 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-        alert-low-percent-threshold = <4>;
+        // alert-gpios = <&gpio0 8 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        // alert-low-percent-threshold = <4>;
     };
 };
