@@ -11,9 +11,9 @@
 / {
     chosen {
         zmk,physical-layout   = &default_layout;
-        zephyr,display        = &ssd1306;        /* OLED enabled — fit 4.7 kΩ pull-ups on SDA+SCL to 3.3 V */
+        // zephyr,display     = &ssd1306;        /* TEMPORARILY DISABLED — OLED disconnected */
         zmk,led-indicators    = &leds;           /* lock LEDs  — requires CONFIG_ZMK_HID_INDICATORS=y */
-        zmk,battery           = &max17048;       /* fuel gauge — interrupt-driven via ALRT→P0.08 */
+        // zmk,battery         = &max17048;       /* TEMPORARILY DISABLED — MAX17048 disconnected */
     };
 
     // -------------------------------------------------------------------------
@@ -322,7 +322,7 @@
 
     ssd1306: ssd1306@3c {
         compatible = "solomon,ssd1306fb";
-        status = "okay";         /* 4.7 kΩ pull-ups on SDA+SCL to 3.3 V must be fitted on the PCB */
+        status = "disabled";     /* TEMPORARILY DISABLED — OLED physically disconnected */
         reg = <0x3c>;
         width = <128>;
         height = <32>;
@@ -337,6 +337,7 @@
 
     max17048: max17048@36 {
         compatible = "zmk,maxim-max17048";
+        status = "disabled";     /* TEMPORARILY DISABLED — MAX17048 physically disconnected */
         reg = <0x36>;
         /* ALRT open-drain → D0/P0.08.
          * Adafruit STEMMA QT board has 10 kΩ pull-up to VIN onboard — no external resistor needed.
