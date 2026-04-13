@@ -1,6 +1,6 @@
 manifest:
   defaults:
-    revision: main
+    revision: v0.3-branch
   remotes:
     - name: zmkfirmware
       url-base: https://github.com/zmkfirmware
@@ -11,7 +11,7 @@ manifest:
   projects:
     - name: zmk
       remote: akashpurandare
-      revision: main
+      revision: v0.3-branch
       import: app/west.yml
   self:
     path: config
