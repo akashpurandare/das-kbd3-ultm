@@ -283,7 +283,7 @@
 //   GPB2-4 are configured as inputs (they are not).  MCP0 INT line is kept for
 //   symmetry and potential future expansion.
 //   MCP1 GPB pins are pull-down row inputs — INT asserts low on each keypress,
-//   waking the nRF and triggering interrupt-driven kscan via GPIO_MCP230XX_INTERRUPT.
+//   waking the nRF and triggering interrupt-driven kscan via int-gpios.
 //
 // MAX17048 ALRT interrupt wiring:
 //   ALRT pin is open-drain, active-low.
@@ -301,7 +301,7 @@
     clock-frequency = <400000>;   /* 400 kHz fast-mode — 4 devices, keep bus fast */
 
     mcp23017_20: mcp23017@20 {
-        compatible = "microchip,mcp230xx";
+        compatible = "microchip,mcp23017";
         reg = <0x20>;
         gpio-controller;
         #gpio-cells = <2>;
@@ -311,7 +311,7 @@
     };
 
     mcp23017_21: mcp23017@21 {
-        compatible = "microchip,mcp230xx";
+        compatible = "microchip,mcp23017";
         reg = <0x21>;
         gpio-controller;
         #gpio-cells = <2>;
