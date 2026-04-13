@@ -285,13 +285,6 @@
 //   MCP1 GPB pins are pull-down row inputs — INT asserts low on each keypress,
 //   waking the nRF and triggering interrupt-driven kscan via int-gpios.
 //
-// MAX17048 ALRT interrupt wiring:
-//   ALRT pin is open-drain, active-low.
-//   The Adafruit MAX17048 STEMMA QT breakout already has a 10 kΩ pull-up to VIN onboard —
-//   no external pull-up resistor is needed on the perfboard.
-//   Connect ALRT → D0 / P0.08  (gpio0 pin 8).
-//   GPIO_PULL_UP is kept as belt-and-suspenders; nRF internal ~13 kΩ || 10 kΩ = ~5.6 kΩ, fine.
-//   alert-low-percent-threshold: 4  → ALRT fires below 4% SoC (register CONFIG[7:0]).
 // -------------------------------------------------------------------------
 &i2c0 {
     status = "okay";
