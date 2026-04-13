@@ -1,0 +1,2 @@
+config SHIELD_DAS_KBD3_ULTM
+    def_bool $(shields_list_contains,das_kbd3_ultm)
