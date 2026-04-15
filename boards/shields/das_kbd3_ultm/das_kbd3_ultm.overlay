@@ -1,6 +1,6 @@
 // Das Keyboard 3.0 Ultimate — ZMK shield overlay
 // Controller: Pro Micro nRF52840 v2.0 (Nice!Nano compatible)
-// Matrix: 18 columns × 8 rows, col2row, diodes per switch
+// Matrix: 18 columns × 8 rows, row2col, diodes per switch
 // GPIO expansion: 2× MCP23017 on I²C (0x20, 0x21)
 // IDC connector: 26-pin 2×13, 2.54mm pitch
 
@@ -60,39 +60,39 @@
     // -------------------------------------------------------------------------
     kscan: kscan {
         compatible = "zmk,kscan-gpio-matrix";
-        diode-direction = "col2row";
+        diode-direction = "row2col";
         wakeup-source;
 
         col-gpios
-            = <&mcp23017_20 7 GPIO_ACTIVE_HIGH>   /* C0  - IDC pin  8  MCP0.GPA7 */
-            , <&mcp23017_20 6 GPIO_ACTIVE_HIGH>   /* C1  - IDC pin  7  MCP0.GPA6 */
-            , <&mcp23017_20 5 GPIO_ACTIVE_HIGH>   /* C2  - IDC pin  6  MCP0.GPA5 */
-            , <&mcp23017_20 8 GPIO_ACTIVE_HIGH>   /* C3  - IDC pin  9  MCP0.GPB0 */
-            , <&mcp23017_20 0 GPIO_ACTIVE_HIGH>   /* C4  - IDC pin  1  MCP0.GPA0 */
-            , <&mcp23017_20 2 GPIO_ACTIVE_HIGH>   /* C5  - IDC pin  3  MCP0.GPA2 */
-            , <&mcp23017_20 9 GPIO_ACTIVE_HIGH>   /* C6  - IDC pin 10  MCP0.GPB1 */
-            , <&mcp23017_20 1 GPIO_ACTIVE_HIGH>   /* C7  - IDC pin  2  MCP0.GPA1 */
-            , <&mcp23017_20 4 GPIO_ACTIVE_HIGH>   /* C8  - IDC pin  5  MCP0.GPA4 */
-            , <&mcp23017_20 3 GPIO_ACTIVE_HIGH>   /* C9  - IDC pin  4  MCP0.GPA3 */
-            , <&mcp23017_21 1 GPIO_ACTIVE_HIGH>   /* C10 - IDC pin 14  MCP1.GPA1 */
-            , <&mcp23017_21 2 GPIO_ACTIVE_HIGH>   /* C11 - IDC pin 15  MCP1.GPA2 */
-            , <&mcp23017_21 6 GPIO_ACTIVE_HIGH>   /* C12 - IDC pin 25  MCP1.GPA6 */
-            , <&mcp23017_21 5 GPIO_ACTIVE_HIGH>   /* C13 - IDC pin 24  MCP1.GPA5 */
-            , <&mcp23017_21 0 GPIO_ACTIVE_HIGH>   /* C14 - IDC pin 13  MCP1.GPA0 */
-            , <&mcp23017_21 7 GPIO_ACTIVE_HIGH>   /* C15 - IDC pin 26  MCP1.GPA7 */
-            , <&mcp23017_21 3 GPIO_ACTIVE_HIGH>   /* C16 - IDC pin 20  MCP1.GPA3 */
-            , <&mcp23017_21 4 GPIO_ACTIVE_HIGH>   /* C17 - IDC pin 23  MCP1.GPA4 */
+            = <&mcp23017_20 7 GPIO_ACTIVE_HIGH>   /* C0  - IDC pin  8  MCP0.GPA7 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 6 GPIO_ACTIVE_HIGH>   /* C1  - IDC pin  7  MCP0.GPA6 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 5 GPIO_ACTIVE_HIGH>   /* C2  - IDC pin  6  MCP0.GPA5 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 8 GPIO_ACTIVE_HIGH>   /* C3  - IDC pin  9  MCP0.GPB0 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 0 GPIO_ACTIVE_HIGH>   /* C4  - IDC pin  1  MCP0.GPA0 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 2 GPIO_ACTIVE_HIGH>   /* C5  - IDC pin  3  MCP0.GPA2 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 9 GPIO_ACTIVE_HIGH>   /* C6  - IDC pin 10  MCP0.GPB1 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 1 GPIO_ACTIVE_HIGH>   /* C7  - IDC pin  2  MCP0.GPA1 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 4 GPIO_ACTIVE_HIGH>   /* C8  - IDC pin  5  MCP0.GPA4 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 3 GPIO_ACTIVE_HIGH>   /* C9  - IDC pin  4  MCP0.GPA3 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_21 1 GPIO_ACTIVE_HIGH>   /* C10 - IDC pin 14  MCP1.GPA1 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_21 2 GPIO_ACTIVE_HIGH>   /* C11 - IDC pin 15  MCP1.GPA2 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_21 6 GPIO_ACTIVE_HIGH>   /* C12 - IDC pin 25  MCP1.GPA6 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_21 5 GPIO_ACTIVE_HIGH>   /* C13 - IDC pin 24  MCP1.GPA5 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_21 0 GPIO_ACTIVE_HIGH>   /* C14 - IDC pin 13  MCP1.GPA0 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_21 7 GPIO_ACTIVE_HIGH>   /* C15 - IDC pin 26  MCP1.GPA7 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_21 3 GPIO_ACTIVE_HIGH>   /* C16 - IDC pin 20  MCP1.GPA3 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_21 4 GPIO_ACTIVE_HIGH>   /* C17 - IDC pin 23  MCP1.GPA4 — ext. 10 kΩ pull-down to GND */
             ;
 
         row-gpios
-            = <&mcp23017_21  8 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R0 - IDC pin 11  MCP1.GPB0 */
-            , <&mcp23017_21  9 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R1 - IDC pin 12  MCP1.GPB1 */
-            , <&mcp23017_21 10 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R2 - IDC pin 16  MCP1.GPB2 */
-            , <&mcp23017_21 11 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R3 - IDC pin 17  MCP1.GPB3 */
-            , <&mcp23017_21 12 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R4 - IDC pin 18  MCP1.GPB4 */
-            , <&mcp23017_21 13 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R5 - IDC pin 19  MCP1.GPB5 */
-            , <&mcp23017_21 14 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R6 - IDC pin 21  MCP1.GPB6 */
-            , <&mcp23017_21 15 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R7 - IDC pin 22  MCP1.GPB7 */
+            = <&mcp23017_21  8 GPIO_ACTIVE_HIGH>  /* R0 - IDC pin 11  MCP1.GPB0 — active-high driven output */
+            , <&mcp23017_21  9 GPIO_ACTIVE_HIGH>  /* R1 - IDC pin 12  MCP1.GPB1 — active-high driven output */
+            , <&mcp23017_21 10 GPIO_ACTIVE_HIGH>  /* R2 - IDC pin 16  MCP1.GPB2 — active-high driven output */
+            , <&mcp23017_21 11 GPIO_ACTIVE_HIGH>  /* R3 - IDC pin 17  MCP1.GPB3 — active-high driven output */
+            , <&mcp23017_21 12 GPIO_ACTIVE_HIGH>  /* R4 - IDC pin 18  MCP1.GPB4 — active-high driven output */
+            , <&mcp23017_21 13 GPIO_ACTIVE_HIGH>  /* R5 - IDC pin 19  MCP1.GPB5 — active-high driven output */
+            , <&mcp23017_21 14 GPIO_ACTIVE_HIGH>  /* R6 - IDC pin 21  MCP1.GPB6 — active-high driven output */
+            , <&mcp23017_21 15 GPIO_ACTIVE_HIGH>  /* R7 - IDC pin 22  MCP1.GPB7 — active-high driven output */
             ;
     };
 
@@ -306,7 +306,9 @@
         gpio-controller;
         #gpio-cells = <2>;
         ngpios = <16>;
-        int-gpios = <&gpio0 24 GPIO_ACTIVE_LOW>;  /* INTB → D5/P0.24; IOCON.MIRROR=1; 4.7kΩ ext. pull-up to 3.3V */
+        /* No int-gpios: all MCP0 pins are outputs (cols C0-C9, LEDs GPB2-4).
+         * MCP0 can never generate a row interrupt — omitting int-gpios prevents
+         * the nRF GPIO callback from firing on switching noise from col scan lines. */
         /* A2=0 A1=0 A0=0 → 0x20 */
     };
 
