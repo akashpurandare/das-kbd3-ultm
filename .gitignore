@@ -1,2 +1,4 @@
 .west/
 .zmk/
+.DS_Store
+zephyr/

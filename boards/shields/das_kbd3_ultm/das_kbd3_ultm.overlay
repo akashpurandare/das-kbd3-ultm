@@ -1,6 +1,6 @@
 // Das Keyboard 3.0 Ultimate — ZMK shield overlay
 // Controller: Pro Micro nRF52840 v2.0 (Nice!Nano compatible)
-// Matrix: 18 columns × 8 rows, col2row, diodes per switch
+// Matrix: 18 columns × 8 rows, row2col, diodes per switch
 // GPIO expansion: 2× MCP23017 on I²C (0x20, 0x21)
 // IDC connector: 26-pin 2×13, 2.54mm pitch
 
@@ -11,58 +11,90 @@
 / {
     chosen {
         zmk,physical-layout   = &default_layout;
-        zephyr,display        = &ssd1306;        /* OLED on I²C — requires CONFIG_ZMK_DISPLAY=y    */
+      // zephyr,display     = &ssd1306;        /* TEMPORARILY DISABLED — OLED disconnected */
         zmk,led-indicators    = &leds;           /* lock LEDs  — requires CONFIG_ZMK_HID_INDICATORS=y */
+      // zmk,battery         = &max17048;       /* TEMPORARILY DISABLED — MAX17048 disconnected */
     };
 
     // -------------------------------------------------------------------------
     // Key scan — all GPIOs via MCP23017 over I²C
     //
-    // MCP23017 (0x20) — &mcp23017_20:
-    //   GPA0–GPA7  (pin index 0–7)  → C0–C7
-    //   GPB0–GPB1  (pin index 8–9)  → C16–C17
+    // Optimized IDC pin assignment — each MCP chip's GPIO pins map to IDC
+    // pins in ascending numerical order, minimising ribbon-cable crossings:
     //
-    // MCP23017 (0x21) — &mcp23017_21:
-    //   GPA0–GPA7  (pin index 0–7)  → C8–C15
-    //   GPB0–GPB7  (pin index 8–15) → R0–R7
+    // MCP23017 (0x20) — &mcp23017_20  (IDC pins 1–10, cols only):
+    //   GPA0 (idx  0) → IDC  1  C4
+    //   GPA1 (idx  1) → IDC  2  C7
+    //   GPA2 (idx  2) → IDC  3  C5
+    //   GPA3 (idx  3) → IDC  4  C9
+    //   GPA4 (idx  4) → IDC  5  C8
+    //   GPA5 (idx  5) → IDC  6  C2
+    //   GPA6 (idx  6) → IDC  7  C1
+    //   GPA7 (idx  7) → IDC  8  C0
+    //   GPB0 (idx  8) → IDC  9  C3
+    //   GPB1 (idx  9) → IDC 10  C6
+    //   GPB2 (idx 10) → NumLk LED
+    //   GPB3 (idx 11) → CapsLk LED
+    //   GPB4 (idx 12) → ScrlLk LED
+    //   GPB5–GPB7 n/c
+    //
+    // MCP23017 (0x21) — &mcp23017_21  (IDC pins 11–26, cols + rows):
+    //   GPB0 (idx  8) → IDC 11  R0  (pull-down input)
+    //   GPB1 (idx  9) → IDC 12  R1  (pull-down input)
+    //   GPA0 (idx  0) → IDC 13  C14
+    //   GPA1 (idx  1) → IDC 14  C10
+    //   GPA2 (idx  2) → IDC 15  C11
+    //   GPB2 (idx 10) → IDC 16  R2  (pull-down input)
+    //   GPB3 (idx 11) → IDC 17  R3  (pull-down input)
+    //   GPB4 (idx 12) → IDC 18  R4  (pull-down input)
+    //   GPB5 (idx 13) → IDC 19  R5  (pull-down input)
+    //   GPA3 (idx  3) → IDC 20  C16
+    //   GPB6 (idx 14) → IDC 21  R6  (pull-down input)
+    //   GPB7 (idx 15) → IDC 22  R7  (pull-down input)
+    //   GPA4 (idx  4) → IDC 23  C17
+    //   GPA5 (idx  5) → IDC 24  C13
+    //   GPA6 (idx  6) → IDC 25  C12
+    //   GPA7 (idx  7) → IDC 26  C15
     //
     // ZMK mcp230xx driver: pin index 0–7 = GPA0–GPA7, 8–15 = GPB0–GPB7
     // -------------------------------------------------------------------------
     kscan: kscan {
         compatible = "zmk,kscan-gpio-matrix";
-        diode-direction = "col2row";
+        diode-direction = "row2col";
         wakeup-source;
+        // debounce-press-ms = <10>;
+        // debounce-release-ms = <10>;
 
         col-gpios
-            = <&mcp23017_20 0 GPIO_ACTIVE_HIGH>   /* C0  - IDC pin  8 */
-            , <&mcp23017_20 1 GPIO_ACTIVE_HIGH>   /* C1  - IDC pin  7 */
-            , <&mcp23017_20 2 GPIO_ACTIVE_HIGH>   /* C2  - IDC pin  6 */
-            , <&mcp23017_20 3 GPIO_ACTIVE_HIGH>   /* C3  - IDC pin  9 */
-            , <&mcp23017_20 4 GPIO_ACTIVE_HIGH>   /* C4  - IDC pin  1 */
-            , <&mcp23017_20 5 GPIO_ACTIVE_HIGH>   /* C5  - IDC pin  3 */
-            , <&mcp23017_20 6 GPIO_ACTIVE_HIGH>   /* C6  - IDC pin 10 */
-            , <&mcp23017_20 7 GPIO_ACTIVE_HIGH>   /* C7  - IDC pin  2 */
-            , <&mcp23017_21 0 GPIO_ACTIVE_HIGH>   /* C8  - IDC pin  5 */
-            , <&mcp23017_21 1 GPIO_ACTIVE_HIGH>   /* C9  - IDC pin  4 */
-            , <&mcp23017_21 2 GPIO_ACTIVE_HIGH>   /* C10 - IDC pin 14 */
-            , <&mcp23017_21 3 GPIO_ACTIVE_HIGH>   /* C11 - IDC pin 15 */
-            , <&mcp23017_21 4 GPIO_ACTIVE_HIGH>   /* C12 - IDC pin 25 */
-            , <&mcp23017_21 5 GPIO_ACTIVE_HIGH>   /* C13 - IDC pin 24 */
-            , <&mcp23017_21 6 GPIO_ACTIVE_HIGH>   /* C14 - IDC pin 13 */
-            , <&mcp23017_21 7 GPIO_ACTIVE_HIGH>   /* C15 - IDC pin 26 */
-            , <&mcp23017_20 8 GPIO_ACTIVE_HIGH>   /* C16 - IDC pin 20 */
-            , <&mcp23017_20 9 GPIO_ACTIVE_HIGH>   /* C17 - IDC pin 23 */
+            = <&mcp23017_20 7 GPIO_ACTIVE_HIGH>   /* C0  - IDC pin  8  MCP0.GPA7 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 6 GPIO_ACTIVE_HIGH>   /* C1  - IDC pin  7  MCP0.GPA6 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 5 GPIO_ACTIVE_HIGH>   /* C2  - IDC pin  6  MCP0.GPA5 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 8 GPIO_ACTIVE_HIGH>   /* C3  - IDC pin  9  MCP0.GPB0 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 0 GPIO_ACTIVE_HIGH>   /* C4  - IDC pin  1  MCP0.GPA0 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 2 GPIO_ACTIVE_HIGH>   /* C5  - IDC pin  3  MCP0.GPA2 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 9 GPIO_ACTIVE_HIGH>   /* C6  - IDC pin 10  MCP0.GPB1 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 1 GPIO_ACTIVE_HIGH>   /* C7  - IDC pin  2  MCP0.GPA1 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 4 GPIO_ACTIVE_HIGH>   /* C8  - IDC pin  5  MCP0.GPA4 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_20 3 GPIO_ACTIVE_HIGH>   /* C9  - IDC pin  4  MCP0.GPA3 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_21 1 GPIO_ACTIVE_HIGH>   /* C10 - IDC pin 14  MCP1.GPA1 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_21 2 GPIO_ACTIVE_HIGH>   /* C11 - IDC pin 15  MCP1.GPA2 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_21 6 GPIO_ACTIVE_HIGH>   /* C12 - IDC pin 25  MCP1.GPA6 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_21 5 GPIO_ACTIVE_HIGH>   /* C13 - IDC pin 24  MCP1.GPA5 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_21 0 GPIO_ACTIVE_HIGH>   /* C14 - IDC pin 13  MCP1.GPA0 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_21 7 GPIO_ACTIVE_HIGH>   /* C15 - IDC pin 26  MCP1.GPA7 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_21 3 GPIO_ACTIVE_HIGH>   /* C16 - IDC pin 20  MCP1.GPA3 — ext. 10 kΩ pull-down to GND */
+            , <&mcp23017_21 4 GPIO_ACTIVE_HIGH>   /* C17 - IDC pin 23  MCP1.GPA4 — ext. 10 kΩ pull-down to GND */
             ;
 
         row-gpios
-            = <&mcp23017_21  8 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R0 - IDC pin 11 */
-            , <&mcp23017_21  9 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R1 - IDC pin 12 */
-            , <&mcp23017_21 10 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R2 - IDC pin 16 */
-            , <&mcp23017_21 11 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R3 - IDC pin 17 */
-            , <&mcp23017_21 12 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R4 - IDC pin 18 */
-            , <&mcp23017_21 13 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R5 - IDC pin 19 */
-            , <&mcp23017_21 14 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R6 - IDC pin 21 */
-            , <&mcp23017_21 15 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* R7 - IDC pin 22 */
+            = <&mcp23017_21  8 GPIO_ACTIVE_HIGH>  /* R0 - IDC pin 11  MCP1.GPB0 — active-high driven output */
+            , <&mcp23017_21  9 GPIO_ACTIVE_HIGH>  /* R1 - IDC pin 12  MCP1.GPB1 — active-high driven output */
+            , <&mcp23017_21 10 GPIO_ACTIVE_HIGH>  /* R2 - IDC pin 16  MCP1.GPB2 — active-high driven output */
+            , <&mcp23017_21 11 GPIO_ACTIVE_HIGH>  /* R3 - IDC pin 17  MCP1.GPB3 — active-high driven output */
+            , <&mcp23017_21 12 GPIO_ACTIVE_HIGH>  /* R4 - IDC pin 18  MCP1.GPB4 — active-high driven output */
+            , <&mcp23017_21 13 GPIO_ACTIVE_HIGH>  /* R5 - IDC pin 19  MCP1.GPB5 — active-high driven output */
+            , <&mcp23017_21 14 GPIO_ACTIVE_HIGH>  /* R6 - IDC pin 21  MCP1.GPB6 — active-high driven output */
+            , <&mcp23017_21 15 GPIO_ACTIVE_HIGH>  /* R7 - IDC pin 22  MCP1.GPB7 — active-high driven output */
             ;
     };
 
@@ -104,70 +136,36 @@
     //   R7(7): Num- Right Down Left Apps /? RAlt N B F12
     // -------------------------------------------------------------------------
     default_transform: default_transform {
-        compatible = "zmk,matrix-transform";
-        columns = <18>;
-        rows = <8>;
+         compatible = "zmk,matrix-transform";
+         columns = <18>;
+         rows = <8>;
 
-        map = <
-        // ── Function row ─────────────────────────────────────────────────────────────────────────────
-        // ESC       F1        F2        F3        F4        F5        F6        F7        F8
-           RC(0,0)   RC(2,1)   RC(2,2)   RC(4,2)   RC(0,2)   RC(1,3)   RC(0,4)   RC(4,5)   RC(2,5)
-        // F9        F10       F11       F12       PrtSc     ScLk      Pause
-           RC(2,6)   RC(1,6)   RC(0,6)   RC(7,6)   RC(1,7)   RC(5,7)   RC(5,3)
-
-        // ── Number row ───────────────────────────────────────────────────────────────────────────────
-        // `         1         2         3         4         5         6         7
-           RC(2,0)   RC(1,0)   RC(1,1)   RC(1,2)   RC(1,8)   RC(2,8)   RC(2,9)   RC(1,9)
-        // 8         9         0         -         =         BkSpc
-           RC(1,4)   RC(1,5)   RC(1,10)  RC(2,10)  RC(2,4)   RC(4,6)
-
-        // ── QWERTY row ───────────────────────────────────────────────────────────────────────────────
-        // Tab       Q         W         E         R         T         Y         U
-           RC(4,0)   RC(5,0)   RC(5,1)   RC(5,2)   RC(5,8)   RC(4,8)   RC(4,9)   RC(5,9)
-        // I         O         P         [{        ]}        \
-           RC(5,4)   RC(5,5)   RC(5,10)  RC(4,10)  RC(4,4)   RC(3,6)
-
-        // ── Home row ─────────────────────────────────────────────────────────────────────────────────
-        // CapsLk    A         S         D         F         G         H         J
-           RC(4,1)   RC(3,0)   RC(3,1)   RC(3,2)   RC(3,8)   RC(0,8)   RC(0,9)   RC(3,9)
-        // K         L         ;         '         Enter
-           RC(3,4)   RC(3,5)   RC(3,10)  RC(0,10)  RC(6,6)
-
-        // ── Shift row ────────────────────────────────────────────────────────────────────────────────
-        // LShft     Z         X         C         V         B         N         M
-           RC(4,12)  RC(6,0)   RC(6,1)   RC(6,2)   RC(6,8)   RC(7,8)   RC(7,9)   RC(6,9)
-        // ,         .         /?        RShft
-           RC(6,4)   RC(6,5)   RC(7,10)  RC(3,12)
-
-        // ── Bottom row ───────────────────────────────────────────────────────────────────────────────
-        // LCtrl     LWin      LAlt                Space               RAlt      RWin      Apps      RCtrl
-           RC(2,3)   RC(4,13)  RC(0,7)             RC(0,11)            RC(7,7)   RC(3,17)  RC(7,5)   RC(6,3)
-
-        // ── Navigation cluster ────────────────────────────────────────────────────────────────────────
-        // Ins       Home      PgUp                Up
-           RC(2,14)  RC(2,15)  RC(2,16)            RC(0,15)
-        // Del       End       PgDn      Left      Down      Right
-           RC(2,11)  RC(1,15)  RC(1,16)  RC(7,15)  RC(7,11)  RC(7,14)
-
-        // ── Numpad ───────────────────────────────────────────────────────────────────────────────────
-        // NumLk     Num/      Num*      Num-
-           RC(6,11)  RC(6,14)  RC(6,16)  RC(7,16)
-        // Num7      Num8      Num9      Num+
-           RC(5,11)  RC(5,14)  RC(5,16)  RC(5,15)
-        // Num4      Num5      Num6
-           RC(4,11)  RC(4,14)  RC(4,16)
-        // Num1      Num2      Num3      NumEnt
-           RC(3,11)  RC(3,14)  RC(3,16)  RC(3,15)
-        // Num0                Num.
-           RC(0,14)            RC(0,16)
+         map = <
+        // ── R0: C0      C1       C2       C3       C4       C5       C6       C7       C8       C9       C10      C11      C12      C13      C14      C15      C16      C17
+        //       ESC      -        F4       -        F6       -        F11      LAlt     G        H        '        Space    -        -        KP0      Up       KP.      -
+           RC(0,0)  RC(0,1)  RC(0,2)  RC(0,3)  RC(0,4)  RC(0,5)  RC(0,6)  RC(0,7)  RC(0,8)  RC(0,9)  RC(0,10) RC(0,11) RC(0,12) RC(0,13) RC(0,14) RC(0,15) RC(0,16) RC(0,17)
+        // ── R1: N1       N2       N3       F5       N8       N9       F10      PrtSc    N4       N7       N0       -        -        -        -        End      PgDn     -
+           RC(1,0)  RC(1,1)  RC(1,2)  RC(1,3)  RC(1,4)  RC(1,5)  RC(1,6)  RC(1,7)  RC(1,8)  RC(1,9)  RC(1,10) RC(1,11) RC(1,12) RC(1,13) RC(1,14) RC(1,15) RC(1,16) RC(1,17)
+        // ── R2: `        F1       F2       LCtrl    =        F8       F9       -        N5       N6       -        Del      -        -        Ins      Home     PgUp     -
+           RC(2,0)  RC(2,1)  RC(2,2)  RC(2,3)  RC(2,4)  RC(2,5)  RC(2,6)  RC(2,7)  RC(2,8)  RC(2,9)  RC(2,10) RC(2,11) RC(2,12) RC(2,13) RC(2,14) RC(2,15) RC(2,16) RC(2,17)
+        // ── R3: A        S        D        -        K        L        \        -        F        J        ;        KP1      RShft    -        KP2      KPEnt    KP3      RWin
+           RC(3,0)  RC(3,1)  RC(3,2)  RC(3,3)  RC(3,4)  RC(3,5)  RC(3,6)  RC(3,7)  RC(3,8)  RC(3,9)  RC(3,10) RC(3,11) RC(3,12) RC(3,13) RC(3,14) RC(3,15) RC(3,16) RC(3,17)
+        // ── R4: Tab      Caps     F3       -        ]}       F7       BkSp     -        T        Y        [{       KP4      LShft    LWin     KP5      -        KP6      -
+           RC(4,0)  RC(4,1)  RC(4,2)  RC(4,3)  RC(4,4)  RC(4,5)  RC(4,6)  RC(4,7)  RC(4,8)  RC(4,9)  RC(4,10) RC(4,11) RC(4,12) RC(4,13) RC(4,14) RC(4,15) RC(4,16) RC(4,17)
+        // ── R5: Q        W        E        Pause    I        O        -        ScLk     R        U        P        KP7      -        -        KP8      KP+      KP9      -
+           RC(5,0)  RC(5,1)  RC(5,2)  RC(5,3)  RC(5,4)  RC(5,5)  RC(5,6)  RC(5,7)  RC(5,8)  RC(5,9)  RC(5,10) RC(5,11) RC(5,12) RC(5,13) RC(5,14) RC(5,15) RC(5,16) RC(5,17)
+        // ── R6: Z        X        C        RCtrl    ,        .        Enter    -        V        M        -        NumLk    -        -        KP/      -        KP*      -
+           RC(6,0)  RC(6,1)  RC(6,2)  RC(6,3)  RC(6,4)  RC(6,5)  RC(6,6)  RC(6,7)  RC(6,8)  RC(6,9)  RC(6,10) RC(6,11) RC(6,12) RC(6,13) RC(6,14) RC(6,15) RC(6,16) RC(6,17)
+        // ── R7: -        -        -        -        -        Apps     F12      RAlt     B        N        /?       Down     -        -        Right    Left     KP-      -
+           RC(7,0)  RC(7,1)  RC(7,2)  RC(7,3)  RC(7,4)  RC(7,5)  RC(7,6)  RC(7,7)  RC(7,8)  RC(7,9)  RC(7,10) RC(7,11) RC(7,12) RC(7,13) RC(7,14) RC(7,15) RC(7,16) RC(7,17)
         >;
     };
 
     // -------------------------------------------------------------------------
     // HID lock-state indicator LEDs
     //
-    // Mapped to free pins on MCP23017 (0x20) port B:
-    //   GPB2 (pin index 10) → Num Lock
+    // Mapped to MCP23017 (0x20) port B:
+    //   GPB2 (pin index 10) → Num Lock    (IDC col range ends at GPB1=idx9; GPB2 is next free)
     //   GPB3 (pin index 11) → Caps Lock
     //   GPB4 (pin index 12) → Scroll Lock
     //
@@ -237,7 +235,31 @@
 //   };
 //
 // Bus devices:  mcp23017@20, mcp23017@21, ssd1306@3c (128×32), max17048@36
-// 4.7 kΩ pull-ups on SDA/SCL to 3.3 V required on the PCB.
+// 4.7 kΩ pull-ups on SDA/SCL to 3.3 V required on the PCB (also re-enables OLED).
+//
+// MCP23017 interrupt wiring — one dedicated INT line per chip:
+//
+//   Each chip: IOCON.MIRROR=1 (INTA mirrors INTB, full 16-pin coverage from one pin)
+//              IOCON.ODR=1    (open-drain INT output)
+//   Fit one 4.7 kΩ pull-up resistor from each INT line to 3.3 V on the PCB.
+//   The nRF52840 GPIO is configured without an internal pull-up (GPIO_ACTIVE_LOW only).
+//
+//   mcp23017@20  INTB ──── D5  / P0.24  (gpio0 pin 24)  — 4.7kΩ ext. pull-up to 3.3V on PCB
+//   mcp23017@21  INTB ──── D6  / P1.00  (gpio1 pin  0)  — 4.7kΩ ext. pull-up to 3.3V on PCB
+//
+//   MCP0 GPA=cols, GPB0-1=cols, GPB2-4=LED outputs — INT will only assert if
+//   GPB2-4 are configured as inputs (they are not).  MCP0 INT line is kept for
+//   symmetry and potential future expansion.
+//   MCP1 GPB pins are pull-down row inputs — INT asserts low on each keypress,
+//   waking the nRF and triggering interrupt-driven kscan via GPIO_MCP230XX_INTERRUPT.
+//
+// MAX17048 ALRT interrupt wiring:
+//   ALRT pin is open-drain, active-low.
+//   The Adafruit MAX17048 STEMMA QT breakout already has a 10 kΩ pull-up to VIN onboard —
+//   no external pull-up resistor is needed on the perfboard.
+//   Connect ALRT → D0 / P0.08  (gpio0 pin 8).
+//   GPIO_PULL_UP is kept as belt-and-suspenders; nRF internal ~13 kΩ || 10 kΩ = ~5.6 kΩ, fine.
+//   alert-low-percent-threshold: 4  → ALRT fires below 4% SoC (register CONFIG[7:0]).
 // -------------------------------------------------------------------------
 &i2c0 {
     status = "okay";
@@ -252,6 +274,9 @@
         gpio-controller;
         #gpio-cells = <2>;
         ngpios = <16>;
+        /* No int-gpios: all MCP0 pins are outputs (cols C0-C9, LEDs GPB2-4).
+         * MCP0 can never generate a row interrupt — omitting int-gpios prevents
+         * the nRF GPIO callback from firing on switching noise from col scan lines. */
         /* A2=0 A1=0 A0=0 → 0x20 */
     };
 
@@ -261,12 +286,14 @@
         gpio-controller;
         #gpio-cells = <2>;
         ngpios = <16>;
+        int-gpios = <&gpio1 0 GPIO_ACTIVE_LOW>;   /* INTB → D6/P1.00; IOCON.MIRROR=1; 4.7kΩ ext. pull-up to 3.3V */
         /* A2=0 A1=0 A0=1 → 0x21 */
     };
 
-    ssd1306: ssd1306@3c {
-        compatible = "solomon,ssd1306fb";
-        reg = <0x3c>;
+   ssd1306: ssd1306@3c {
+      compatible = "solomon,ssd1306fb";
+      status = "disabled";     /* TEMPORARILY DISABLED — OLED physically disconnected */
+      reg = <0x3c>;
         width = <128>;
         height = <32>;
         segment-offset = <0>;
@@ -278,8 +305,17 @@
                                     DFRobot Fermion 0.91″ module)              */
     };
 
-    max17048: max17048@36 {
-        compatible = "maxim,max17048";
-        reg = <0x36>;
+   max17048: max17048@36 {
+      compatible = "zmk,maxim-max17048";
+      status = "disabled";     /* TEMPORARILY DISABLED — MAX17048 physically disconnected */
+      reg = <0x36>;
+        /* ALRT open-drain → D0/P0.08.
+         * Adafruit STEMMA QT board has 10 kΩ pull-up to VIN onboard — no external resistor needed.
+         * GPIO_PULL_UP kept as belt-and-suspenders (nRF ~13 kΩ || board 10 kΩ = ~5.6 kΩ).
+         * alert-low-percent-threshold configures the CONFIG register ATHD field.
+         * The driver sets ATHD so ALRT fires below the threshold, then clears
+         * STATUS.EnVR on re-read so the open-drain line deasserts.            */
+        // alert-gpios = <&gpio0 8 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        // alert-low-percent-threshold = <4>;
     };
 };

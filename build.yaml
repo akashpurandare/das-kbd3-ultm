@@ -21,3 +21,5 @@
 include:
   - board: nice_nano_v2
     shield: das_kbd3_ultm
+    snippet: zmk-usb-logging
+    artifact-name: das_kbd3_ultm_debug
