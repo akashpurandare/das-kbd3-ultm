@@ -1,0 +1,62 @@
+/*
+ * Debug overlay — no PCB/header-pins connected.
+ *
+ * Root cause: without the PCB's 4.7kΩ I2C pull-up resistors, I2C transactions
+ * cannot NACK cleanly (nRF internal ~13kΩ pull-ups have too high an RC product
+ * with floating pin capacitance at 400kHz — SDA rise time can exceed the SCL
+ * sample window, causing NACK to appear as ACK and transactions to run to
+ * timeout). The TWI peripheral must complete/timeout each of the ~60
+ * transactions (MCP23017 init + 26 kscan GPIO configures) before usb_enable()
+ * at APPLICATION priority 94, preventing USB from enumerating within macOS's
+ * window.
+ *
+ * Fix: replace the GPIO matrix kscan with a zero-event mock kscan as the chosen
+ * zmk,kscan, and disable the real kscan and MCP23017 nodes. This produces
+ * exactly ZERO I2C transactions during boot — the same path that makes
+ * settings_reset_debug always enumerate.
+ *
+ * NOTE: If you need to test without the PCB connected but want the full
+ * firmware to boot with I2C present, add 4.7kΩ pull-up resistors from
+ * SDA (D2 / P0.17) and SCL (D3 / P0.20) to 3.3V on the nice!nano directly.
+ */
+
+/ {
+    chosen {
+        zmk,kscan = &debug_kscan;
+    };
+
+    debug_kscan: debug_kscan {
+        compatible = "zmk,kscan-mock";
+        columns = <0>;
+        rows = <0>;
+        events = <>;
+    };
+};
+
+/* Disable GPIO matrix kscan: prevents 26× gpio_pin_configure I2C calls */
+&kscan {
+    status = "disabled";
+};
+
+/*
+ * ZMK physical-layout code resolves the kscan device from the layout's
+ * `kscan` phandle, not from zmk,kscan chosen. Redirect it to the mock so
+ * DEVICE_DT_GET doesn't reference the now-disabled GPIO matrix kscan.
+ */
+&default_layout {
+    kscan = <&debug_kscan>;
+};
+
+/* Disable MCP23017s: prevents driver init I2C writes entirely */
+&mcp23017_20 {
+    status = "disabled";
+};
+
+&mcp23017_21 {
+    status = "disabled";
+};
+
+/* Disable LED device: references disabled MCP23017 nodes */
+&leds {
+    status = "disabled";
+};
