@@ -1,0 +1,108 @@
+diff --git a/boards/shields/das_kbd3_ultm/das_kbd3_ultm.conf b/boards/shields/das_kbd3_ultm/das_kbd3_ultm.conf
+index 4ba92c4..7dab2c2 100644
+--- a/boards/shields/das_kbd3_ultm/das_kbd3_ultm.conf
++++ b/boards/shields/das_kbd3_ultm/das_kbd3_ultm.conf
+@@ -37,19 +37,23 @@ CONFIG_I2C=y
+ CONFIG_GPIO_MCP230XX=y
+ 
+ # ── kscan mode ────────────────────────────────────────────────────────────────
+-# Force polling mode for the GPIO matrix kscan.
++# POLLING mode — interrupt mode disabled due to phantom presses on C2.
+ #
+-# Interrupt-driven kscan on MCP23017 creates an inherent race: kscan reads
+-# REG_GPIO (clears INTF) during its scan cycle, while the MCP driver's work
+-# handler also tries to read INTF → always finds 0 → "Spurious interrupt" log
+-# every scan cycle.  This is a known Zephyr gpio_mcp23xxx driver limitation —
+-# reading GPIO on an MCP23017 clears INTF, and there is no way to avoid it
+-# while the kscan scans 18 cols × I2C-backed GPIOs.
++# Root cause: ZMK interrupt idle state drives ALL 8 rows HIGH simultaneously.
++# The combined resistive/capacitive coupling from 8 active rows through the IDC
++# ribbon cable pulls column C2 (MCP0.GPA5, IDC pin 6) above the MCP23017 logic-
++# HIGH threshold (0.7 × 3.3 V = 2.31 V), overwhelming the 10 kΩ pull-down.
++# Result: C2 looks stuck-HIGH → all keys in that column (F2/F3/F4/3/E/D/C)
++# report phantom presses.
+ #
+-# In polling mode: GPINTEN stays at 0, MCP1 INT never fires, no work_handler
+-# race, no spurious interrupt messages.  The MCP1 int-gpios DTS entry is kept
+-# for future wakeup-source use (soft-off), but no interrupt callbacks are
+-# registered during normal kscan operation.
++# In polling mode only one row is driven at a time for ~1 ms, so the coupling
++# current is 1/8 as large and the pull-down holds C2 cleanly low.
++#
++# To re-enable interrupt mode the pull-down on C2 (IDC pin 6) must be reduced
++# from 10 kΩ to ≤ 4.7 kΩ so it can sink the cumulative coupling from 8 rows.
++# Or reduce IDC cable length / improve routing to lower parasitic coupling.
++# The int-gpios entries in the overlay are kept so the wires remain useful
++# once the pull-downs are corrected.
+ CONFIG_ZMK_KSCAN_MATRIX_POLLING=y
+ 
+ # ── MAX17048 ALRT interrupt (low-battery wake) ────────────────────────────────
+diff --git a/boards/shields/das_kbd3_ultm/das_kbd3_ultm.overlay b/boards/shields/das_kbd3_ultm/das_kbd3_ultm.overlay
+index 9af4106..43983c0 100644
+--- a/boards/shields/das_kbd3_ultm/das_kbd3_ultm.overlay
++++ b/boards/shields/das_kbd3_ultm/das_kbd3_ultm.overlay
+@@ -164,26 +164,31 @@
+     // -------------------------------------------------------------------------
+     // HID lock-state indicator LEDs
+     //
+-    // Mapped to MCP23017 (0x20) port B:
+-    //   GPB2 (pin index 10) → Num Lock    (IDC col range ends at GPB1=idx9; GPB2 is next free)
+-    //   GPB3 (pin index 11) → Caps Lock
+-    //   GPB4 (pin index 12) → Scroll Lock
++    // Wiring: 3.3V → 470Ω (onboard) → LED → nRF52840 GPIO (current-sink).
++    // GPIO LOW = LED ON  →  GPIO_ACTIVE_LOW.
++    //
++    //   Num Lock    → D7  / P0.11  (gpio0 pin 11)
++    //   Caps Lock   → D8  / P1.04  (gpio1 pin  4)
++    //   Scroll Lock → D9  / P1.06  (gpio1 pin  6)
+     //
+     // ZMK maps these in HID indicator order (0=NumLk 1=CapsLk 2=ScrlLk)
+     // matching the USB HID spec. Requires CONFIG_ZMK_HID_INDICATORS=y.
++    //
++    // Moving LEDs to direct nRF52840 GPIO frees MCP0 GPB2-4, making MCP0 a
++    // pure column-input chip and allowing int-gpios to be enabled on MCP0.
+     // -------------------------------------------------------------------------
+     leds: leds {
+         compatible = "gpio-leds";
+         led_num_lock: led_num_lock {
+-            gpios = <&mcp23017_20 10 GPIO_ACTIVE_HIGH>;
++            gpios = <&gpio0 11 GPIO_ACTIVE_LOW>;  /* D7  / P0.11 — 3.3V→470Ω→LED→GPIO */
+             label = "Num Lock LED";
+         };
+         led_caps_lock: led_caps_lock {
+-            gpios = <&mcp23017_20 11 GPIO_ACTIVE_HIGH>;
++            gpios = <&gpio1 4 GPIO_ACTIVE_LOW>;   /* D8  / P1.04 — 3.3V→470Ω→LED→GPIO */
+             label = "Caps Lock LED";
+         };
+         led_scroll_lock: led_scroll_lock {
+-            gpios = <&mcp23017_20 12 GPIO_ACTIVE_HIGH>;
++            gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;   /* D9  / P1.06 — 3.3V→470Ω→LED→GPIO */
+             label = "Scroll Lock LED";
+         };
+     };
+@@ -273,11 +278,12 @@
+         reg = <0x20>;
+         gpio-controller;
+         #gpio-cells = <2>;
+-        ngpios = <16>;
+-        /* No int-gpios: all MCP0 pins are outputs (cols C0-C9, LEDs GPB2-4).
+-         * MCP0 can never generate a row interrupt — omitting int-gpios prevents
+-         * the nRF GPIO callback from firing on switching noise from col scan lines. */
+-        /* A2=0 A1=0 A0=0 → 0x20 */
++        int-gpios = <&gpio0 24 GPIO_ACTIVE_LOW>;  /* INTB → D5/P0.24; IOCON.MIRROR=1; 4.7kΩ ext. pull-up to 3.3V */
++        /* MCP0 GPA0-7 = col inputs C4,C7,C5,C9,C8,C2,C1,C0
++         * MCP0 GPB0-1 = col inputs C3,C6
++         * MCP0 GPB2-7 = unused (LEDs relocated to direct nRF52840 GPIO D7/D8/D9)
++         * IOCON.MIRROR=1: INTA mirrors INTB — one INT line covers all 16 pins.
++         * A2=0 A1=0 A0=0 → 0x20 */
+     };
+ 
+     mcp23017_21: mcp23017@21 {
+@@ -285,7 +291,6 @@
+         reg = <0x21>;
+         gpio-controller;
+         #gpio-cells = <2>;
+-        ngpios = <16>;
+         int-gpios = <&gpio1 0 GPIO_ACTIVE_LOW>;   /* INTB → D6/P1.00; IOCON.MIRROR=1; 4.7kΩ ext. pull-up to 3.3V */
+         /* A2=0 A1=0 A0=1 → 0x21 */
+     };
