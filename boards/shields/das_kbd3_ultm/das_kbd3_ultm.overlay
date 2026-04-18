@@ -5,6 +5,7 @@
 // IDC connector: 26-pin 2×13, 2.54mm pitch
 
 #include <dt-bindings/zmk/matrix_transform.h>
+#include <dt-bindings/zmk/hid_indicators.h>
 
 #include "das_kbd3_ultm.dtsi"
 
@@ -12,7 +13,6 @@
     chosen {
         zmk,physical-layout   = &default_layout;
       // zephyr,display     = &ssd1306;        /* TEMPORARILY DISABLED — OLED disconnected */
-        zmk,led-indicators    = &leds;           /* lock LEDs  — requires CONFIG_ZMK_HID_INDICATORS=y */
       // zmk,battery         = &max17048;       /* TEMPORARILY DISABLED — MAX17048 disconnected */
     };
 
@@ -163,32 +163,46 @@
     // -------------------------------------------------------------------------
     // HID lock-state indicator LEDs
     //
-    // Wiring: 3.3V → 470Ω (onboard) → LED → nRF52840 GPIO (current-sink).
+    // Wiring: 3.3V → 470Ω → LED → nRF52840 GPIO (current-sink).
     // GPIO LOW = LED ON  →  GPIO_ACTIVE_LOW.
     //
     //   Num Lock    → D7  / P0.11  (gpio0 pin 11)
     //   Caps Lock   → D8  / P1.04  (gpio1 pin  4)
     //   Scroll Lock → D9  / P1.06  (gpio1 pin  6)
     //
-    // ZMK maps these in HID indicator order (0=NumLk 1=CapsLk 2=ScrlLk)
-    // matching the USB HID spec. Requires CONFIG_ZMK_HID_INDICATORS=y.
-    //
-    // LEDs on nRF52840 D7/D8/D9. MCP0 now carries all 16 column inputs (C0–C15)
-    // and MCP1 drives all 8 row outputs (R0–R7). C16/C17 use nRF direct GPIO.
+    // New ZMK API: zmk,indicator-leds node (zmk/app/dts/bindings/indicators/)
+    // Each child maps a gpio-leds child phandle → HID_INDICATOR_* constant.
+    // ZMK_INDICATOR_LEDS Kconfig is auto-enabled by DT_HAS_ZMK_INDICATOR_LEDS_ENABLED
+    // when this node exists; CONFIG_ZMK_HID_INDICATORS=y is still required in .conf.
     // -------------------------------------------------------------------------
-    leds: leds {
+    leds {
         compatible = "gpio-leds";
         led_num_lock: led_num_lock {
             gpios = <&gpio0 11 GPIO_ACTIVE_LOW>;  /* D7  / P0.11 — 3.3V→470Ω→LED→GPIO */
-            label = "Num Lock LED";
         };
         led_caps_lock: led_caps_lock {
             gpios = <&gpio1 4 GPIO_ACTIVE_LOW>;   /* D8  / P1.04 — 3.3V→470Ω→LED→GPIO */
-            label = "Caps Lock LED";
         };
         led_scroll_lock: led_scroll_lock {
             gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;   /* D9  / P1.06 — 3.3V→470Ω→LED→GPIO */
-            label = "Scroll Lock LED";
+        };
+    };
+
+    indicators {
+        compatible = "zmk,indicator-leds";
+        on-when-idle;
+
+        num_lock_indicator {
+            leds = <&led_num_lock>;
+            indicator = <HID_INDICATOR_NUM_LOCK>;
+        };
+        caps_lock_indicator {
+            leds = <&led_caps_lock>;
+            indicator = <HID_INDICATOR_CAPS_LOCK>;   
+        };
+        scroll_lock_indicator {
+            leds = <&led_scroll_lock>;
+            indicator = <HID_INDICATOR_SCROLL_LOCK>;
         };
     };
 
